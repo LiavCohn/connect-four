@@ -4,13 +4,14 @@ import pickle
 import threading
 from logic import ROWS, COLS, PLAYER1, PLAYER2
 
+
 WIDTH, HEIGHT = 700, 650
 CELL_SIZE = WIDTH // COLS
 RADIUS = CELL_SIZE // 2 - 5
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
+BLUE = (114, 156, 229)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 
@@ -21,13 +22,13 @@ pygame.display.set_caption("Connect Four")
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 5555))
 
-board, player_id = pickle.loads(client.recv(4096))
+board, player_id, turn = pickle.loads(client.recv(4096))
 
 my_color = RED if player_id == PLAYER1 else YELLOW
 op_color = YELLOW if my_color == RED else RED
 font = pygame.font.SysFont(None, 40)
 
-message = "Your Turn" if player_id == PLAYER1 else "Waiting..."
+message = "Your Turn" if player_id == PLAYER1 else "Waiting..."  # inital message
 status = None
 lock = threading.Lock()
 
@@ -68,6 +69,9 @@ def listen_for_updates():
                     message = "You Lose!"
                 elif status == "DRAW":
                     message = "Draw!"
+                elif status == "DISCONNECTED":
+                    message = "Other player disconnected... waiting for another"
+
                 else:
                     message = "Your Turn" if turn == player_id else "Waiting..."
         except:
@@ -86,8 +90,7 @@ while run:
 
         if event.type == pygame.MOUSEBUTTONDOWN and player_id == turn:
             with lock:
-                if message == "Your Turn":
-                    x = event.pos[0] // CELL_SIZE
-                    client.send(pickle.dumps(x))
+                x = event.pos[0] // CELL_SIZE
+                client.send(pickle.dumps(x))
 
 pygame.quit()
